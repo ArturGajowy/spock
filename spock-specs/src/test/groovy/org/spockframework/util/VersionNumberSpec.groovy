@@ -37,6 +37,12 @@ class VersionNumberSpec extends Specification {
     VersionNumber.parse("11.22.33.44") == new VersionNumber(11, 22, 33, "44")
     VersionNumber.parse("11.44") == new VersionNumber(11, 44, 0, null)
     VersionNumber.parse("11.fortyfour") == new VersionNumber(11, 0, 0, "fortyfour")
+
+    VersionNumber.parse("abcdef0123") == new VersionNumber(0, 0, 0, "abcdef0123")
+    VersionNumber.parse("ABCDEF0123") == new VersionNumber(0, 0, 0, "abcdef0123")
+    VersionNumber.parse("0123456789") == new VersionNumber(0, 0, 0, "0123456789")
+    VersionNumber.parse("12345") == new VersionNumber(12345, 0, 0, null)
+    VersionNumber.parse("123456") == new VersionNumber(0, 0, 0, "123456")
   }
 
   def "unparseable version number is represented as UNKNOWN (0.0.0)"() {
@@ -46,6 +52,7 @@ class VersionNumberSpec extends Specification {
     VersionNumber.parse("foo") == VersionNumber.UNKNOWN
     VersionNumber.parse("1.") == VersionNumber.UNKNOWN
     VersionNumber.parse("1.2.3-") == VersionNumber.UNKNOWN
+    VersionNumber.parse("abcXYZ0123") == VersionNumber.UNKNOWN
   }
 
   def "accessors"() {
@@ -63,6 +70,7 @@ class VersionNumberSpec extends Specification {
     expect:
     new VersionNumber(1, 0, 0, null).toString() == "1.0.0"
     new VersionNumber(1, 2, 3, "foo").toString() == "1.2.3-foo"
+    VersionNumber.parse("abcdef0123").toString() == "0.0.0-abcdef0123"
   }
 
   def "equality"() {
@@ -77,17 +85,22 @@ class VersionNumberSpec extends Specification {
   def "comparison"() {
     expect:
     (new VersionNumber(1, 1, 1, null) <=> new VersionNumber(1, 1, 1, null)) == 0
+    (new VersionNumber(0, 0, 0, 'a') <=> new VersionNumber(0, 0, 0, 'b')) == 0
 
     (new VersionNumber(2, 1, 1, null) <=> new VersionNumber(1, 1, 1, null)) > 0
     (new VersionNumber(1, 2, 1, null) <=> new VersionNumber(1, 1, 1, null)) > 0
     (new VersionNumber(1, 1, 2, null) <=> new VersionNumber(1, 1, 1, null)) > 0
     (new VersionNumber(1, 1, 1, "foo") <=> new VersionNumber(1, 1, 1, null)) > 0
     (new VersionNumber(1, 1, 1, "b") <=> new VersionNumber(1, 1, 1, "a")) > 0
+    (new VersionNumber(1, 0, 0, "abcdef0123") <=> new VersionNumber(0, 0, 0, "abcdef0123")) > 0
+    (new VersionNumber(0, 0, 1, "abcdef0123") <=> new VersionNumber(0, 0, 0, "abcdef0123")) > 0
 
     (new VersionNumber(1, 1, 1, null) <=> new VersionNumber(2, 1, 1, null)) < 0
     (new VersionNumber(1, 1, 1, null) <=> new VersionNumber(1, 2, 1, null)) < 0
     (new VersionNumber(1, 1, 1, null) <=> new VersionNumber(1, 1, 2, null)) < 0
     (new VersionNumber(1, 1, 1, null) <=> new VersionNumber(1, 1, 1, "foo")) < 0
     (new VersionNumber(1, 1, 1, "a") <=> new VersionNumber(1, 1, 1, "b")) < 0
+    (new VersionNumber(0, 0, 0, "abcdef0123") <=> new VersionNumber(1, 0, 0, "abcdef0123")) < 0
+    (new VersionNumber(0, 0, 0, "abcdef0123") <=> new VersionNumber(0, 0, 1, "abcdef0123")) < 0
   }
 }

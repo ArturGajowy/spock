@@ -25,6 +25,7 @@ public final class VersionNumber implements Comparable<VersionNumber> {
   public static final VersionNumber UNKNOWN = new VersionNumber(0, 0, 0, null);
 
 	private static final Pattern versionPattern = Pattern.compile("(\\d+)(?:\\.(\\d+))?+(?:\\.(\\d+))?+(?:[-\\.](.+))?");
+	private static final Pattern gitCommitHashPattern = Pattern.compile("[0-9A-Fa-f]{6,40}");
 	private static final String versionTemplate = "%d.%d.%d%s";
 
 	private final int major;
@@ -55,12 +56,14 @@ public final class VersionNumber implements Comparable<VersionNumber> {
     return qualifier;
   }
 
-	public int compareTo(VersionNumber other) {
-		if (major != other.major) return major - other.major;
-		if (minor != other.minor) return minor - other.minor;
-		if (micro != other.micro) return micro - other.micro;
+  public int compareTo(VersionNumber other) {
+    if (major != other.major) return major - other.major;
+    if (minor != other.minor) return minor - other.minor;
+    if (micro != other.micro) return micro - other.micro;
+    //all commit hash versions are equal to each other and smaller than any x.y.z-* version
+    if (major == 0 && minor == 0 && micro == 0) return 0;
     return ObjectUtil.compare(qualifier, other.qualifier);
-	}
+  }
 
 	public boolean equals(Object other) {
 		return other instanceof VersionNumber && compareTo((VersionNumber)other) == 0;
@@ -75,22 +78,26 @@ public final class VersionNumber implements Comparable<VersionNumber> {
   }
 
   public String toString() {
-		return String.format(versionTemplate, major, minor, micro, qualifier == null ? "" : "-" + qualifier);
-	}
+    return String.format(versionTemplate, major, minor, micro, qualifier == null ? "" : "-" + qualifier);
+  }
 
-	public static VersionNumber parse(String versionString) {
+  public static VersionNumber parse(String versionString) {
     if (versionString == null) return UNKNOWN;
-		Matcher m = versionPattern.matcher(versionString);
-		if (!m.matches()) return UNKNOWN;
 
-		int major = Integer.valueOf(m.group(1));
-		String minorString = m.group(2);
-		int minor = minorString == null ? 0 : Integer.valueOf(minorString);
-		String microString = m.group(3);
-		int micro = microString == null ? 0 : Integer.valueOf(microString);
+    if (gitCommitHashPattern.matcher(versionString).matches()) {
+      return new VersionNumber(0, 0, 0, versionString.toLowerCase());
+    }
+
+    Matcher m = versionPattern.matcher(versionString);
+    if (!m.matches()) return UNKNOWN;
+    int major = Integer.valueOf(m.group(1));
+    String minorString = m.group(2);
+    int minor = minorString == null ? 0 : Integer.valueOf(minorString);
+    String microString = m.group(3);
+    int micro = microString == null ? 0 : Integer.valueOf(microString);
     String qualifier = m.group(4);
 
-		return new VersionNumber(major, minor, micro, qualifier);
-	}
+    return new VersionNumber(major, minor, micro, qualifier);
+  }
 }
 
